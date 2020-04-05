@@ -23,7 +23,7 @@ if(WITH_MKL)
 else()
     find_package(OpenBLAS REQUIRED)
     include_directories(${OpenBLAS_INCLUDE_DIR})
-    set(BLAS_LIB ${OpenBLAS_LIB} /usr/lib/lapack/liblapack.so.3.0)
+    set(BLAS_LIB ${OpenBLAS_LIB})
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -m64 -Wall -mavx2 -mpopcnt -fopenmp -Wno-sign-compare")
