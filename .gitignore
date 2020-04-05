@@ -16,3 +16,6 @@
 /c_api/gpu/bin/
 /tests/test
 /tests/gtest/
+.idea
+cmake-build-debug
+build
