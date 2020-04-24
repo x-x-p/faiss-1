@@ -50,7 +50,52 @@ DeviceTensor<T, Dim, true> toDevice(GpuResources* resources,
     }
   }
 }
+inline void toDevice( float* dst,const float* src, size_t num, cudaStream_t stream) {
+    // It is possible that the array already represents memory at `p`,
+    // in which case no copy is needed
+    if (src == dst) {
+        return;
+    }
 
+    int dev = getDeviceForAddress(src);
+
+    if (dev == -1) {
+        CUDA_VERIFY(cudaMemcpyAsync(dst,
+                                    src,
+                                    num * sizeof(float),
+                                    cudaMemcpyHostToDevice,
+                                    stream));
+    } else {
+        CUDA_VERIFY(cudaMemcpyAsync(dst,
+                                    src,
+                                    num * sizeof(float),
+                                    cudaMemcpyDeviceToDevice,
+                                    stream));
+    }
+}
+inline void toDevice( int8_t * dst,const int8_t* src, size_t num, cudaStream_t stream) {
+    // It is possible that the array already represents memory at `p`,
+    // in which case no copy is needed
+    if (src == dst) {
+        return;
+    }
+
+    int dev = getDeviceForAddress(src);
+
+    if (dev == -1) {
+        CUDA_VERIFY(cudaMemcpyAsync(dst,
+                                    src,
+                                    num * sizeof(int8_t),
+                                    cudaMemcpyHostToDevice,
+                                    stream));
+    } else {
+        CUDA_VERIFY(cudaMemcpyAsync(dst,
+                                    src,
+                                    num * sizeof(int8_t),
+                                    cudaMemcpyDeviceToDevice,
+                                    stream));
+    }
+}
 /// Copies data to the CPU, if it is not already on the CPU
 template <typename T, int Dim>
 HostTensor<T, Dim, true> toHost(T* src,

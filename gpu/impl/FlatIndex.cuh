@@ -90,6 +90,8 @@ class FlatIndex {
   /// or the device
   void add(const float* data, int numVecs, cudaStream_t stream);
 
+  void del(int key, cudaStream_t stream);
+
   /// Free all storage
   void reset();
 

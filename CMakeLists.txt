@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.7)
 # faiss project
 project(faiss C CXX)
 
-option(BUILD_TUTORIAL "Build tutorials" ON)
+option(BUILD_TUTORIAL "Build tutorials" OFF)
 option(BUILD_TEST "Build tests" OFF)
 option(BUILD_WITH_GPU "Build faiss with gpu (cuda) support" ON)
 option(WITH_MKL "Build with MKL if ON (OpenBLAS if OFF)" OFF)
@@ -39,11 +39,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # specify header and cpp files
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-file(GLOB faiss_cpu_headers ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 file(GLOB faiss_cpu_cpp ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+file(GLOB faiss_cpu_impl_cpp ${CMAKE_CURRENT_SOURCE_DIR}/impl/*.cpp)
+file(GLOB faiss_cpu_utils_cpp ${CMAKE_CURRENT_SOURCE_DIR}/utils/*.cpp)
 
 set(faiss_lib faiss)
-add_library(${faiss_lib} SHARED ${faiss_cpu_headers} ${faiss_cpu_cpp})
+add_library(${faiss_lib} SHARED ${faiss_cpu_cpp} ${faiss_cpu_impl_cpp} ${faiss_cpu_utils_cpp})
 target_link_libraries(${faiss_lib} ${OpenMP_CXX_FLAGS} ${BLAS_LIB})
 
 # build gpu lib

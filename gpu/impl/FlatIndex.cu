@@ -284,6 +284,43 @@ FlatIndex::add(const float* data, int numVecs, cudaStream_t stream) {
   }
 }
 
+void FlatIndex::del(int id, cudaStream_t stream) {
+    if(id > num_ - 1) {
+        return;
+    }
+
+    if(useFloat16_) {
+        FAISS_THROW_MSG ("del not implemented for useFloat16_");
+    }
+
+    if(id < num_ - 1){
+        //不释放以前申请的
+        CUDA_VERIFY(cudaMemcpy(
+                ((char*)rawData_.data()) + id * dim_ * sizeof(float),
+                ((char*)rawData_.data()) + (num_ - 1) * dim_ * sizeof(float),
+                dim_ * sizeof(float), //In bytes
+                cudaMemcpyDeviceToDevice
+        ));
+    }
+
+    num_ -= 1;
+    rawData_.resize(num_ * dim_ * sizeof(float), stream);
+
+    {
+        DeviceTensor<float, 2, true> vectors(
+                (float*) rawData_.data(), {(int) num_, dim_}, space_);
+        vectors_ = std::move(vectors);
+    }
+
+    if (storeTransposed_) {
+        {
+            vectorsTransposed_ =
+                    std::move(DeviceTensor<float, 2, true>({dim_, (int) num_}, space_));
+            runTransposeAny(vectors_, 0, 1, vectorsTransposed_, stream);
+        }
+    }
+}
+
 void
 FlatIndex::reset() {
   rawData_.clear();

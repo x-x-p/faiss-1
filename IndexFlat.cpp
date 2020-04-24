@@ -123,6 +123,25 @@ size_t IndexFlat::remove_ids (const IDSelector & sel)
     return nremove;
 }
 
+size_t IndexFlat::remove_id(idx_t i)
+{
+    idx_t j = ntotal - 1;
+    if(i > j) {
+        return 0;
+    }
+
+    if(i < j) {
+        memmove (&xb[d * j], &xb[d * i], sizeof(xb[0]) * d);
+    }
+    ntotal -= 1;
+    xb.resize(ntotal * d);
+    return 1;
+}
+
+void IndexFlat::update(idx_t key, const float *data)
+{
+    memcpy (&(xb[key * d]), data, sizeof(*data) * d);
+}
 
 namespace {
 

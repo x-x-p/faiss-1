@@ -53,6 +53,14 @@ size_t Index::remove_ids(const IDSelector& /*sel*/) {
   return -1;
 }
 
+size_t Index::remove_id(faiss::Index::idx_t /*i*/) {
+  FAISS_THROW_MSG ("remove_ids not implemented for this type of index");
+  return -1;
+}
+
+void Index::update(faiss::Index::idx_t i, const float *recons){
+  FAISS_THROW_MSG ("remove_ids not implemented for this type of index");
+}
 
 void Index::reconstruct (idx_t, float * ) const {
   FAISS_THROW_MSG ("reconstruct not implemented for this type of index");

@@ -128,6 +128,34 @@ GpuIndexFlat::train(Index::idx_t n, const float* x) {
   // nothing to do
 }
 
+size_t
+GpuIndexFlat::remove_id(faiss::Index::idx_t i)
+{
+    if(i > ntotal - 1) {
+        return 0;
+    }
+    DeviceScope scope(device_);
+    data_->del(i, resources_->getDefaultStream(device_));
+    return 1;
+}
+
+void
+GpuIndexFlat::update(idx_t key, const float *recons)
+{
+    if(key > ntotal - 1) {
+        return;
+    }
+    DeviceScope scope(device_);
+    auto stream = resources_->getDefaultStream(device_);
+    if(config_.useFloat16) {
+        auto vec = data_->getVectorsFloat32Copy(key, 1, stream);
+        toDevice(vec.data(), recons, d, stream);
+    } else {
+        auto vec = data_->getVectorsFloat32Ref()[key];
+        toDevice(vec.data(), recons, d, stream);
+    }
+}
+
 void
 GpuIndexFlat::add(Index::idx_t n, const float* x) {
   FAISS_THROW_IF_NOT_MSG(this->is_trained, "Index not trained");

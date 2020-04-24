@@ -64,6 +64,13 @@ struct IndexFlat: Index {
      * different from the usual ones: the new ids are shifted */
     size_t remove_ids(const IDSelector& sel) override;
 
+    /** remove some id. NB that Because of the structure of the
+     * indexing structure, the semantics of this operation are
+     * different from the usual ones: pos i will exchange ntotal - 1 */
+    size_t remove_id(idx_t i) override;
+
+    void update(idx_t i, const float* data) override ;
+
     IndexFlat () {}
 
     DistanceComputer * get_distance_computer() const override;

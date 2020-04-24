@@ -143,6 +143,16 @@ struct Index {
      */
     virtual size_t remove_ids (const IDSelector & sel);
 
+    /** removes ID from the index. Not supported by all
+     * indexes. Returns the number of elements removed.
+     */
+    virtual size_t remove_id (idx_t i);
+
+    /** update id to the index. Not support by all
+     *  indexes.
+     */
+    virtual void update(idx_t i, const float* recons);
+
     /** Reconstruct a stored vector (or an approximation if lossy coding)
      *
      * this function may not be defined for some indexes
