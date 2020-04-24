@@ -131,7 +131,7 @@ size_t IndexFlat::remove_id(idx_t i)
     }
 
     if(i < j) {
-        memmove (&xb[d * j], &xb[d * i], sizeof(xb[0]) * d);
+        memmove (&xb[d * i], &xb[d * j], sizeof(xb[0]) * d);
     }
     ntotal -= 1;
     xb.resize(ntotal * d);
