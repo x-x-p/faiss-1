@@ -33,6 +33,30 @@ void runL2Distance(GpuResources* resources,
                    // take shortcuts.
                    bool ignoreOutDistances = false);
 
+void runL2Distance(GpuResources* resources,
+                   Tensor<half, 2, true>& vectors,
+                   bool vectorsRowMajor,
+                   Tensor<float, 1, true>* vectorNorms,
+                   Tensor<half, 2, true>& queries,
+                   bool queriesRowMajor,
+                   int k,
+                   Tensor<float, 2, true>& outDistances,
+                   Tensor<int, 2, true>& outIndices,
+                   bool ignoreOutDistances = false);
+
+void inline runL2Distance(GpuResources* resources,
+                   Tensor<int8_t, 2, true>& vectors,
+                   bool vectorsRowMajor,
+                   Tensor<int, 1, true>* vectorNorms,
+                   Tensor<int8_t, 2, true>& queries,
+                   bool queriesRowMajor,
+                   int k,
+                   Tensor<int, 2, true>& outDistances,
+                   Tensor<int, 2, true>& outIndices,
+                   bool ignoreOutDistances = false) {
+    FAISS_THROW_MSG("Not Impl");
+}
+
 /// Calculates brute-force inner product distance between `vectors`
 /// and `queries`, returning the k closest results seen
 void runIPDistance(GpuResources* resources,
@@ -53,35 +77,37 @@ void runIPDistance(GpuResources* resources,
                    Tensor<float, 2, true>& outDistances,
                    Tensor<int, 2, true>& outIndices);
 
-void runL2Distance(GpuResources* resources,
-                   Tensor<half, 2, true>& vectors,
+void runIPDistance(GpuResources* resources,
+                   Tensor<int8_t, 2, true>& vectors,
                    bool vectorsRowMajor,
-                   Tensor<float, 1, true>* vectorNorms,
-                   Tensor<half, 2, true>& queries,
+                   Tensor<int8_t, 2, true>& queries,
                    bool queriesRowMajor,
                    int k,
-                   Tensor<float, 2, true>& outDistances,
-                   Tensor<int, 2, true>& outIndices,
-                   bool ignoreOutDistances = false);
+                   Tensor<int, 2, true>& outDistances,
+                   Tensor<int, 2, true>& outIndices);
 
 //
 // General distance implementation, assumes that all arguments are on the
 // device. This is the top-level internal distance function to call to dispatch
 // based on metric type.
 //
+
+template <typename T>
+struct DistType { typedef typename std::conditional<std::is_integral<T>::value, int, float>::type type ; };
+
 template <typename T>
 void bfKnnOnDevice(GpuResources* resources,
                    int device,
                    cudaStream_t stream,
                    Tensor<T, 2, true>& vectors,
                    bool vectorsRowMajor,
-                   Tensor<float, 1, true>* vectorNorms,
+                   Tensor<typename DistType<T>::type, 1, true>* vectorNorms,
                    Tensor<T, 2, true>& queries,
                    bool queriesRowMajor,
                    int k,
                    faiss::MetricType metric,
                    float metricArg,
-                   Tensor<float, 2, true>& outDistances,
+                   Tensor<typename DistType<T>::type, 2, true>& outDistances,
                    Tensor<int, 2, true>& outIndices,
                    bool ignoreOutDistances) {
   // We are guaranteed that all data arguments are resident on our preferred

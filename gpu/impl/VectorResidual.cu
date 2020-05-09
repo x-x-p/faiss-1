@@ -50,15 +50,15 @@ __global__ void calcResidual(Tensor<float, 2, true> vecs,
   }
 }
 
-template <typename T>
+template <typename T, typename U>
 __global__ void gatherReconstruct(Tensor<int, 1, true> listIds,
                                   Tensor<T, 2, true> vecs,
-                                  Tensor<float, 2, true> out) {
+                                  Tensor<U, 2, true> out) {
   auto id = listIds[blockIdx.x];
   auto vec = vecs[id];
   auto outVec = out[blockIdx.x];
 
-  Convert<T, float> conv;
+  Convert<T, U> conv;
 
   for (int i = threadIdx.x; i < vecs.getSize(1); i += blockDim.x) {
     outVec[i] = id == -1 ? 0.0f : conv(vec[i]);
@@ -93,10 +93,10 @@ void calcResidual(Tensor<float, 2, true>& vecs,
   CUDA_TEST_ERROR();
 }
 
-template <typename T>
+template <typename T, typename  U>
 void gatherReconstruct(Tensor<int, 1, true>& listIds,
                        Tensor<T, 2, true>& vecs,
-                       Tensor<float, 2, true>& out,
+                       Tensor<U, 2, true>& out,
                        cudaStream_t stream) {
   FAISS_ASSERT(listIds.getSize(0) == out.getSize(0));
   FAISS_ASSERT(vecs.getSize(1) == out.getSize(1));
@@ -106,7 +106,7 @@ void gatherReconstruct(Tensor<int, 1, true>& listIds,
   int maxThreads = getMaxThreadsCurrentDevice();
   dim3 block(std::min(vecs.getSize(1), maxThreads));
 
-  gatherReconstruct<T><<<grid, block, 0, stream>>>(listIds, vecs, out);
+  gatherReconstruct<T, U><<<grid, block, 0, stream>>>(listIds, vecs, out);
 
   CUDA_TEST_ERROR();
 }
@@ -131,14 +131,21 @@ void runReconstruct(Tensor<int, 1, true>& listIds,
                     Tensor<float, 2, true>& vecs,
                     Tensor<float, 2, true>& out,
                     cudaStream_t stream) {
-  gatherReconstruct<float>(listIds, vecs, out, stream);
+  gatherReconstruct<float, float>(listIds, vecs, out, stream);
 }
 
 void runReconstruct(Tensor<int, 1, true>& listIds,
                     Tensor<half, 2, true>& vecs,
                     Tensor<float, 2, true>& out,
                     cudaStream_t stream) {
-  gatherReconstruct<half>(listIds, vecs, out, stream);
+  gatherReconstruct<half, float>(listIds, vecs, out, stream);
+}
+
+void runReconstruct(Tensor<int, 1, true>& listIds,
+                    Tensor<int8_t, 2, true>& vecs,
+                    Tensor<int8_t, 2, true>& out,
+                    cudaStream_t stream) {
+    gatherReconstruct<int8_t, int8_t>(listIds, vecs, out, stream);
 }
 
 } } // namespace

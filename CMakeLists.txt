@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.7)
 # faiss project
 project(faiss C CXX)
 
-option(BUILD_TUTORIAL "Build tutorials" OFF)
+option(BUILD_TUTORIAL "Build tutorials" ON)
 option(BUILD_TEST "Build tests" OFF)
 option(BUILD_WITH_GPU "Build faiss with gpu (cuda) support" ON)
 option(WITH_MKL "Build with MKL if ON (OpenBLAS if OFF)" OFF)
@@ -26,7 +26,7 @@ else()
     set(BLAS_LIB ${OpenBLAS_LIB})
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -m64 -Wall -mavx2 -mpopcnt -fopenmp -Wno-sign-compare")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -m64 -Wall -mavx2 -mpopcnt -fopenmp -Wno-sign-compare -Wno-unused-variable -Wno-unused-function")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
@@ -54,9 +54,9 @@ if(BUILD_WITH_GPU)
 endif(BUILD_WITH_GPU)
 
 # build tutorial examples
-if(BUILD_TUTORIAL)
+#if(BUILD_TUTORIAL)
     add_subdirectory(tutorial)
-endif(BUILD_TUTORIAL)
+#endif(BUILD_TUTORIAL)
 
 # build tests
 if(BUILD_TEST)

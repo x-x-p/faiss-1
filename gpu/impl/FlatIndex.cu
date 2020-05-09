@@ -284,6 +284,7 @@ FlatIndex::add(const float* data, int numVecs, cudaStream_t stream) {
   }
 }
 
+// todo: support f16
 void FlatIndex::del(int id, cudaStream_t stream) {
     if(id > num_ - 1) {
         return;

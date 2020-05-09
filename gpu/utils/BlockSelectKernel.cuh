@@ -132,4 +132,15 @@ void runBlockSelectPair(Tensor<half, 2, true>& inKeys,
                         Tensor<int, 2, true>& outIndices,
                         bool dir, int k, cudaStream_t stream);
 
+void runBlockSelect(Tensor<int, 2, true>& in,
+                    Tensor<int, 2, true>& outKeys,
+                    Tensor<int, 2, true>& outIndices,
+                    bool dir, int k, cudaStream_t stream);
+
+void runBlockSelectPair(Tensor<int, 2, true>& inKeys,
+                        Tensor<int, 2, true>& inIndices,
+                        Tensor<int, 2, true>& outKeys,
+                        Tensor<int, 2, true>& outIndices,
+                        bool dir, int k, cudaStream_t stream);
+
 } } // namespace

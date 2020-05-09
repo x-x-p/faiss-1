@@ -36,6 +36,9 @@ float  fvec_inner_product (
         const float * y,
         size_t d);
 
+int
+i8vec_inner_product(const int8_t* a, const int8_t* b, int dim);
+
 /// L1 distance
 float fvec_L1 (
         const float * x,
@@ -167,6 +170,12 @@ void knn_inner_product (
         const float * y,
         size_t d, size_t nx, size_t ny,
         float_minheap_array_t * res);
+
+void knn_inner_product (
+        const int8_t * x,
+        const int8_t * y,
+        size_t d, size_t nx, size_t ny,
+        int_minheap_array_t * res);
 
 /** Same as knn_inner_product, for the L2 distance */
 void knn_L2sqr (

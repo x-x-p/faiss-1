@@ -27,6 +27,7 @@ namespace faiss {
 
 #ifdef __AVX__
 #define USE_AVX
+
 #endif
 
 
@@ -332,38 +333,113 @@ static inline __m256 masked_read_8 (int d, const float *x)
     }
 }
 
+int
+i8vec_inner_product(const int8_t* a, const int8_t* b, int dim)
+{
+    int d = 0;
+
+#if defined(__AVX512BW__) && defined(__AVX512DQ__)
+    __m512i S = _mm512_setzero_si512(), O = _mm512_setzero_si512();
+    while (dim >= 64) {
+        auto Ap = _mm512_loadu_si512(a); a += 64;
+        auto Bp = _mm512_loadu_si512(b); b += 64;
+        auto Ap1 = _mm512_srai_epi16(Ap, 8);
+        auto Ap2 = _mm512_srai_epi16(_mm512_slli_epi16(Ap, 8), 8);
+        auto Bp1 = _mm512_srai_epi16(Bp, 8);
+        auto Bp2 = _mm512_srai_epi16(_mm512_slli_epi16(Bp, 8), 8);
+        S += (_mm512_madd_epi16(Ap1, Bp1) + _mm512_madd_epi16(Ap2, Bp2));
+        dim -= 64;
+    }
+
+    auto S0 = _mm512_extracti32x8_epi32(S, 1);
+    S0 += _mm512_extracti32x8_epi32(S, 0);
+
+    if (dim >= 32) {
+#else
+    auto S0 = _mm256_setzero_si256();
+    while (dim >= 32) {
+#endif
+        auto Ap = _mm256_loadu_si256((const __m256i*)a); a += 32;
+        auto Bp = _mm256_loadu_si256((const __m256i*)b); b += 32;
+        auto Ap1 = _mm256_srai_epi16(Ap, 8);
+        auto Ap2 = _mm256_srai_epi16(_mm256_slli_epi16(Ap, 8), 8);
+        auto Bp1 = _mm256_srai_epi16(Bp, 8);
+        auto Bp2 = _mm256_srai_epi16(_mm256_slli_epi16(Bp, 8), 8);
+        S0 += (_mm256_madd_epi16(Ap1, Bp1) + _mm256_madd_epi16(Ap2, Bp2));
+        dim -= 32;
+    }
+
+    auto S1 = _mm256_extracti128_si256(S0, 1);
+    S1 += _mm256_extracti128_si256(S0, 0);
+
+    if (dim >= 16) {
+        auto Ap = _mm_loadu_si128((__m128i*)a); a += 16;
+        auto Bp = _mm_loadu_si128((__m128i*)b); b += 16;
+        auto Ap1 = _mm_srai_epi16(Ap, 8);
+        auto Ap2 = _mm_srai_epi16(_mm_slli_epi16(Ap, 8), 8);
+        auto Bp1 = _mm_srai_epi16(Bp, 8);
+        auto Bp2 = _mm_srai_epi16(_mm_slli_epi16(Bp, 8), 8);
+        S1 += (_mm_madd_epi16(Ap1, Bp1) + _mm_madd_epi16(Ap2, Bp2));
+        dim -= 16;
+    }
+    while (dim) {
+        d += ((int32_t)*a * (int32_t)*b);
+        dim -= 1; a += 1; b += 1;
+    }
+
+    S1 = _mm_hadd_epi32(S1, S1);
+    S1 = _mm_hadd_epi32(S1, S1);
+
+    d += _mm_cvtsi128_si32(S1);
+
+    return d;
+}
+
 float fvec_inner_product (const float * x,
                           const float * y,
                           size_t d)
 {
-    __m256 msum1 = _mm256_setzero_ps();
+#if defined(__AVX512DQ__)
+    __m512 S = _mm512_setzero_ps();
 
+    while (d >= 16) {
+        __m512 mx = _mm512_loadu_ps (x); x += 16;
+        __m512 my = _mm512_loadu_ps (y); y += 16;
+        S = _mm512_add_ps (S, _mm512_mul_ps (mx, my));
+        d -= 16;
+    }
+    __m256 S0 = _mm512_extractf32x8_ps(S, 0);
+    S0       += _mm512_extractf32x8_ps(S, 1);
+    if (d >= 8) {
+#else
+    __m256 S0 = _mm256_setzero_ps();
     while (d >= 8) {
+#endif
         __m256 mx = _mm256_loadu_ps (x); x += 8;
         __m256 my = _mm256_loadu_ps (y); y += 8;
-        msum1 = _mm256_add_ps (msum1, _mm256_mul_ps (mx, my));
+        S0 = _mm256_add_ps (S0, _mm256_mul_ps (mx, my));
         d -= 8;
     }
 
-    __m128 msum2 = _mm256_extractf128_ps(msum1, 1);
-    msum2 +=       _mm256_extractf128_ps(msum1, 0);
+    __m128 S1 = _mm256_extractf128_ps(S0, 1);
+    S1       += _mm256_extractf128_ps(S0, 0);
 
     if (d >= 4) {
         __m128 mx = _mm_loadu_ps (x); x += 4;
         __m128 my = _mm_loadu_ps (y); y += 4;
-        msum2 = _mm_add_ps (msum2, _mm_mul_ps (mx, my));
+        S1 = _mm_add_ps (S1, _mm_mul_ps (mx, my));
         d -= 4;
     }
 
     if (d > 0) {
         __m128 mx = masked_read (d, x);
         __m128 my = masked_read (d, y);
-        msum2 = _mm_add_ps (msum2, _mm_mul_ps (mx, my));
+        S1 = _mm_add_ps (S1, _mm_mul_ps (mx, my));
     }
 
-    msum2 = _mm_hadd_ps (msum2, msum2);
-    msum2 = _mm_hadd_ps (msum2, msum2);
-    return  _mm_cvtss_f32 (msum2);
+    S1 = _mm_hadd_ps (S1, S1);
+    S1 = _mm_hadd_ps (S1, S1);
+    return  _mm_cvtss_f32 (S1);
 }
 
 float fvec_L2sqr (const float * x,

@@ -20,13 +20,13 @@ class DeviceMemory;
 
 /// C = alpha * A * B + beta * C
 /// Expects row major layout, not fortran/blas column major!
-template <typename AT, typename BT>
+template <typename AT, typename BT, typename CT>
 void
-runMatrixMult(Tensor<float, 2, true>& c, bool transC,
+runMatrixMult(Tensor<CT, 2, true>& c, bool transC,
               Tensor<AT, 2, true>& a, bool transA,
               Tensor<BT, 2, true>& b, bool transB,
-              float alpha,
-              float beta,
+              CT alpha,
+              CT beta,
               cublasHandle_t handle,
               cudaStream_t stream);
 
@@ -55,5 +55,3 @@ void runBatchMatrixMult(Tensor<float, 3, true>& c, bool transC,
                         cudaStream_t stream);
 
 } } // namespace
-
-#include <faiss/gpu/utils/MatrixMult-inl.cuh>

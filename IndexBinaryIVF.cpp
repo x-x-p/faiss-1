@@ -353,7 +353,7 @@ struct IVFBinaryScannerL2: BinaryInvertedListScanner {
 
 template <bool store_pairs>
 BinaryInvertedListScanner *select_IVFBinaryScannerL2 (size_t code_size) {
-
+    return nullptr;
 }
 
 

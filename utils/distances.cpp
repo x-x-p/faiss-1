@@ -183,6 +183,45 @@ static void knn_inner_product_sse (const float * x,
 
 }
 
+static void knn_inner_product_sse (const int8_t * x,
+                                   const int8_t * y,
+                                   size_t d, size_t nx, size_t ny,
+                                   int_minheap_array_t * res)
+{
+    size_t k = res->k;
+    size_t check_period = InterruptCallback::get_period_hint (ny * d);
+
+    check_period *= omp_get_max_threads();
+
+    for (size_t i0 = 0; i0 < nx; i0 += check_period) {
+        size_t i1 = std::min(i0 + check_period, nx);
+
+#pragma omp parallel for default(none) shared(i0, i1, x, y, d, res, k, ny)
+        for (size_t i = i0; i < i1; i++) {
+            const int8_t * x_i = x + i * d;
+            const int8_t * y_j = y;
+
+            int * __restrict simi = res->get_val(i);
+            int64_t * __restrict idxi = res->get_ids (i);
+
+            minheap_heapify (k, simi, idxi);
+
+            for (size_t j = 0; j < ny; j++) {
+                int ip = i8vec_inner_product (x_i, y_j, d);
+
+                if (ip > simi[0]) {
+                    minheap_pop (k, simi, idxi);
+                    minheap_push (k, simi, idxi, ip, j);
+                }
+                y_j += d;
+            }
+            minheap_reorder (k, simi, idxi);
+        }
+        InterruptCallback::check ();
+    }
+
+}
+
 static void knn_L2sqr_sse (
                 const float * x,
                 const float * y,
@@ -263,6 +302,52 @@ static void knn_inner_product_blas (
         InterruptCallback::check ();
     }
     res->reorder ();
+}
+
+#define BLK_SZ 2048
+
+// todo maximize cache utilization (https://dl.acm.org/doi/10.1145/1356052.1356053)
+static void knn_inner_product_blas (
+        const int8_t * x,
+        const int8_t * y,
+        size_t d, size_t nx, size_t ny,
+        int_minheap_array_t * res)
+{
+    res->heapify ();
+
+    auto tmaxcnt = omp_get_max_threads();
+    if (nx < tmaxcnt) omp_set_num_threads(nx);
+
+#pragma omp parallel default(none) shared(x, y, nx, ny, d, res)
+    {
+        auto tcnt = omp_get_num_threads();
+        int task_per = std::ceil(nx / (float) tcnt);
+
+        auto tid = omp_get_thread_num();
+        for (size_t b = 0; b < ny; b += BLK_SZ) {
+            for (size_t i = tid * task_per; i < nx && i < (tid + 1) * task_per; ++i) {
+                const auto *xi = x + i * d;
+
+                auto *__restrict simi = res->get_val(i);
+                auto *__restrict idxi = res->get_ids(i);
+
+                for (size_t j = b; j < b + BLK_SZ && j < ny; ++j) {
+                    auto *yj = y + j * d;
+                    int dist = i8vec_inner_product(xi, yj, d);
+                    if (dist > simi[0]) {
+                        minheap_pop(res->k, simi, idxi);
+                        minheap_push(res->k, simi, idxi, dist, j);
+                    }
+                }
+            }
+        }
+
+        for (size_t i = tid * task_per; i < nx && i < (tid+1)*task_per; ++i) {
+            auto *__restrict simi = res->get_val(i);
+            auto *__restrict idxi = res->get_ids(i);
+            minheap_reorder (res->k, simi, idxi);
+        }
+    }
 }
 
 // distance correction is an operator that can be applied to transform
@@ -358,6 +443,18 @@ void knn_inner_product (const float * x,
         const float * y,
         size_t d, size_t nx, size_t ny,
         float_minheap_array_t * res)
+{
+    if (nx < distance_compute_blas_threshold) {
+        knn_inner_product_sse (x, y, d, nx, ny, res);
+    } else {
+        knn_inner_product_blas (x, y, d, nx, ny, res);
+    }
+}
+
+void knn_inner_product (const int8_t * x,
+                        const int8_t * y,
+                        size_t d, size_t nx, size_t ny,
+                        int_minheap_array_t * res)
 {
     if (nx < distance_compute_blas_threshold) {
         knn_inner_product_sse (x, y, d, nx, ny, res);

@@ -36,4 +36,9 @@ void runReconstruct(Tensor<int, 1, true>& listIds,
                     Tensor<float, 2, true>& out,
                     cudaStream_t stream);
 
+void runReconstruct(Tensor<int, 1, true>& listIds,
+                    Tensor<int8_t, 2, true>& vecs,
+                    Tensor<int8_t, 2, true>& out,
+                    cudaStream_t stream);
+
 } } // namespace

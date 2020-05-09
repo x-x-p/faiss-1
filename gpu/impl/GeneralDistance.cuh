@@ -426,4 +426,15 @@ void runGeneralDistance(GpuResources* resources,
   CUDA_TEST_ERROR();
 }
 
+template <typename T, typename DistanceOp, bool InnerContig>
+void runGeneralDistance(GpuResources* resources,
+                        Tensor<T, 2, InnerContig>& centroids,
+                        Tensor<T, 2, InnerContig>& queries,
+                        int k,
+                        const DistanceOp& op,
+                        Tensor<int, 2, true>& outDistances,
+                        Tensor<int, 2, true>& outIndices) {
+    FAISS_THROW_MSG("Not Impl");
+}
+
 } } // namespace
