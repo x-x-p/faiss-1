@@ -17,8 +17,8 @@
 
 int main() {
     int d = 64;                            // dimension
-    int nb = 100000;                       // database size
-    int nq = 10000;                        // nb of queries
+    int nb = 2000000;                       // database size
+    int nq = 1024;                        // nb of queries
 
     float *xb = new float[d * nb];
     float *xq = new float[d * nq];
@@ -39,7 +39,9 @@ int main() {
 
     // Using a flat index
 
-    faiss::gpu::GpuIndexFlatL2 index_flat(&res, d);
+    faiss::gpu::GpuIndexFlatConfig config;
+    config.storeTransposed = true;
+    faiss::gpu::GpuIndexFlatL2 index_flat(&res, d, config);
 
     printf("is_trained = %s\n", index_flat.is_trained ? "true" : "false");
     index_flat.add(nb, xb);  // add vectors to the index

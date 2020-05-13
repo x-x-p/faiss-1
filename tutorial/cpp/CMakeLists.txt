@@ -5,10 +5,9 @@ include_directories(../../../)	# faiss root directory
 
 foreach(source ${srcs})
     get_filename_component(name ${source} NAME_WE)
-    message("${faiss_lib_gpu}")
     # target
     add_executable(${name} ${source})
-    target_link_libraries(${name} ${faiss_lib} gpufaiss)
+    target_link_libraries(${name} gpufaiss ${faiss_lib})
 
     # Install
     install(TARGETS ${name} DESTINATION bin)
